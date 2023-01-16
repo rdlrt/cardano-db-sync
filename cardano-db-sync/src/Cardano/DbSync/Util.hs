@@ -152,7 +152,7 @@ panicAbort msg = do
 
 logAndPanic :: Trace IO Text -> Text -> IO ()
 logAndPanic tracer msg = do
-  logError tracer msg
+  logError tracer msg 
   panic msg
 
 plusCoin :: Coin -> Coin -> Coin
