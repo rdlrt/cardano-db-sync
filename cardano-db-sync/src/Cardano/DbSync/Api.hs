@@ -82,6 +82,7 @@ data SyncEnv = SyncEnv
   , envConsistentLevel :: !(StrictTVar IO ConsistentLevel)
   , envIsFixed :: !(StrictTVar IO Bool)
   , envIndexes :: !(StrictTVar IO Bool)
+  , envEpochTable :: !(StrictTVar IO (Maybe Word64))
   , envOptions :: !SyncOptions
   , envCache :: !Cache
   , envOfflineWorkQueue :: !(StrictTBQueue IO PoolFetchRetry)
@@ -277,6 +278,7 @@ mkSyncEnv trce connSring syncOptions protoInfo nw nwMagic systemStart dir ranAll
   consistentLevelVar <- newTVarIO Unchecked
   fixDataVar <- newTVarIO ranAll
   indexesVar <- newTVarIO forcedIndexes
+  epochTableVar <- newTVarIO Nothing
   owq <- newTBQueueIO 100
   orq <- newTBQueueIO 100
   epochVar <- newTVarIO initEpochState
@@ -294,6 +296,7 @@ mkSyncEnv trce connSring syncOptions protoInfo nw nwMagic systemStart dir ranAll
       , envConsistentLevel = consistentLevelVar
       , envIsFixed = fixDataVar
       , envIndexes = indexesVar
+      , envEpochTable = epochTableVar
       , envCache = cache
       , envOfflineWorkQueue = owq
       , envOfflineResultQueue = orq

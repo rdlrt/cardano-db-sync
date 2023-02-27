@@ -150,12 +150,10 @@ insertBlock env cblk applyRes firstAfterRollback tookSnapshot = do
   insertEpoch details
   lift $ commitOrIndexes withinTwoMin withinHalfHour
   where
-    tracer = getTrace env
-
     insertEpoch details =
       when (soptExtended $ envOptions env)
         . newExceptT
-        $ epochInsert tracer (BlockDetails cblk details)
+        $ epochInsert env (BlockDetails cblk details)
 
     getPrices :: ApplyResult -> Maybe Ledger.Prices
     getPrices applyResult = case apPrices applyResult of
