@@ -19,7 +19,7 @@ import Cardano.Ledger.BaseTypes
 import Cardano.Ledger.Coin
 import qualified Cardano.Ledger.Core as Core
 import Cardano.Ledger.Credential
-import Cardano.Ledger.Era (Crypto)
+import Cardano.Ledger.Era (EraCrypto)
 import Cardano.Ledger.Shelley.Tx hiding (ShelleyTx)
 import qualified Cardano.Ledger.Shelley.Tx as ShelleyTx
 import Cardano.Ledger.Shelley.TxBody
@@ -88,7 +88,7 @@ mkSimpleDCertTx consDert st = do
   mkDCertTx dcerts (Wdrl mempty)
 
 consPaymentTxBody ::
-  Set (TxIn (Crypto (ShelleyEra StandardCrypto))) ->
+  Set (TxIn StandardCrypto) ->
   StrictSeq (ShelleyTxOut (ShelleyEra StandardCrypto)) ->
   Coin ->
   ShelleyTxBody (ShelleyEra StandardCrypto)
@@ -98,7 +98,7 @@ consCertTxBody :: [DCert StandardCrypto] -> Wdrl StandardCrypto -> ShelleyTxBody
 consCertTxBody = consTxBody mempty mempty (Coin 0)
 
 consTxBody ::
-  Set (TxIn (Crypto (ShelleyEra StandardCrypto))) ->
+  Set (TxIn StandardCrypto) ->
   StrictSeq (ShelleyTxOut (ShelleyEra StandardCrypto)) ->
   Coin ->
   [DCert StandardCrypto] ->

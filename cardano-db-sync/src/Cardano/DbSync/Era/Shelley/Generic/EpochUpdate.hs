@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Cardano.DbSync.Era.Shelley.Generic.EpochUpdate (
   NewEpoch (..),
@@ -53,6 +54,7 @@ extractEpochNonce extLedgerState =
     ChainDepStateMary st -> extractNonce st
     ChainDepStateAlonzo st -> extractNonce st
     ChainDepStateBabbage st -> extractNoncePraos st
+    ChainDepStateConway _ -> panic "TODO: Conway not done yet"
   where
     extractNonce :: Consensus.TPraosState c -> Ledger.Nonce
     extractNonce =

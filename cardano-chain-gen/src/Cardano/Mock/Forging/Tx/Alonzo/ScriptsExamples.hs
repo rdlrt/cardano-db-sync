@@ -23,11 +23,12 @@ module Cardano.Mock.Forging.Tx.Alonzo.ScriptsExamples (
   plutusData2,
   plutusDataEncLen,
   plutusDataEncIndef,
+  toBinaryPlutus,
 ) where
 
 import Cardano.Ledger.Address
 import Cardano.Ledger.Alonzo
-import Cardano.Ledger.Alonzo.Data
+import Cardano.Ledger.Alonzo.Scripts.Data
 import Cardano.Ledger.Alonzo.Language
 import Cardano.Ledger.Alonzo.Scripts
 import Cardano.Ledger.BaseTypes
@@ -42,8 +43,9 @@ import Codec.Serialise
 import Codec.Serialise.Encoding
 import Data.ByteString.Short
 import Ouroboros.Consensus.Cardano.Block (StandardAlonzo)
-import qualified Plutus.V1.Ledger.Examples as Plutus
+import qualified PlutusLedgerApi.Test.Examples as Plutus
 import qualified PlutusCore.Data as Plutus
+import Cardano.Prelude (panic)
 
 alwaysSucceedsScript :: forall era. AlonzoScript era
 alwaysSucceedsScript = PlutusScript PlutusV1 (Plutus.alwaysSucceedingNAryFunction 0)
@@ -70,7 +72,7 @@ alwaysFailsScriptAddr = Addr Testnet (ScriptHashObj alwaysFailsScriptHash) Stake
 alwaysFailsScriptStake :: StakeCredential StandardCrypto
 alwaysFailsScriptStake = ScriptHashObj alwaysFailsScriptHash
 
-plutusDataList :: forall era. Data era
+plutusDataList :: forall era. Era era => Data era
 plutusDataList = Data $ Plutus.List []
 
 alwaysMintScript :: forall era. AlonzoScript era
@@ -87,7 +89,7 @@ alwaysMintScriptStake = ScriptHashObj alwaysMintScriptHash
 
 scriptHash ::
   forall era.
-  ( Crypto era ~ StandardCrypto
+  ( EraCrypto era ~ StandardCrypto
   , Core.Script era ~ AlonzoScript era
   , Core.EraScript era
   ) =>
@@ -110,3 +112,8 @@ plutusDataEncLen = toShort $ toStrictByteString $ mconcat (encodeListLen 2 : (en
 
 plutusDataEncIndef :: ShortByteString
 plutusDataEncIndef = toShort $ toStrictByteString $ encodeList plutusData2
+
+toBinaryPlutus :: AlonzoScript era -> BinaryPlutus
+toBinaryPlutus as = case as of
+  TimelockScript _ -> panic "expected Alonzo script"
+  PlutusScript _ sbs -> BinaryPlutus sbs

@@ -70,7 +70,6 @@ import Ouroboros.Consensus.Network.NodeToClient (
   cStateQueryCodec,
   cTxSubmissionCodec,
  )
-import Ouroboros.Consensus.Node.ErrorPolicy (consensusErrorPolicy)
 import Ouroboros.Network.Block (
   BlockNo (..),
   Point (..),
@@ -124,6 +123,7 @@ import Ouroboros.Network.Protocol.LocalStateQuery.Client (localStateQueryClientP
 import qualified Ouroboros.Network.Snocket as Snocket
 import Ouroboros.Network.Subscription (SubscriptionTrace)
 import System.Directory (createDirectoryIfMissing)
+import Ouroboros.Consensus.Node.ErrorPolicy
 
 runSyncNode ::
   MetricSetters ->

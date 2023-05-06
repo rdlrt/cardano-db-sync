@@ -1697,7 +1697,7 @@ mintMultiAsset =
   withFullConfig babbageConfig testLabel $ \interpreter mockServer dbSync -> do
     startDBSync dbSync
     void $ withBabbageFindLeaderAndSubmitTx interpreter mockServer $ \st -> do
-      let val0 = MaryValue 1 $ Map.singleton (PolicyID alwaysMintScriptHash) (Map.singleton (head assetNames) 1)
+      let val0 = MultiAsset $ Map.singleton (PolicyID alwaysMintScriptHash) (Map.singleton (head assetNames) 1)
       Babbage.mkMAssetsScriptTx [UTxOIndex 0] (UTxOIndex 1) [(UTxOAddressNew 0, MaryValue 10000 mempty)] [] val0 True 100 st
 
     assertBlockNoBackoff dbSync 1
@@ -1713,7 +1713,7 @@ mintMultiAssets =
       let assets0 = Map.fromList [(head assetNames, 10), (assetNames !! 1, 4)]
       let policy0 = PolicyID alwaysMintScriptHash
       let policy1 = PolicyID alwaysSucceedsScriptHash
-      let val1 = MaryValue 1 $ Map.fromList [(policy0, assets0), (policy1, assets0)]
+      let val1 = MultiAsset $ Map.fromList [(policy0, assets0), (policy1, assets0)]
       tx0 <- Babbage.mkMAssetsScriptTx [UTxOIndex 0] (UTxOIndex 1) [(UTxOAddressNew 0, MaryValue 10000 mempty)] [] val1 True 100 st
       tx1 <- Babbage.mkMAssetsScriptTx [UTxOIndex 2] (UTxOIndex 3) [(UTxOAddressNew 0, MaryValue 10000 mempty)] [] val1 True 200 st
       pure [tx0, tx1]
@@ -1731,9 +1731,9 @@ swapMultiAssets =
       let assetsMinted0 = Map.fromList [(head assetNames, 10), (assetNames !! 1, 4)]
       let policy0 = PolicyID alwaysMintScriptHash
       let policy1 = PolicyID alwaysSucceedsScriptHash
-      let mintValue0 = MaryValue 100 $ Map.fromList [(policy0, assetsMinted0), (policy1, assetsMinted0)]
+      let mintValue0 = MultiAsset $ Map.fromList [(policy0, assetsMinted0), (policy1, assetsMinted0)]
       let assets0 = Map.fromList [(head assetNames, 5), (assetNames !! 1, 2)]
-      let outValue0 = MaryValue 20 $ Map.fromList [(policy0, assets0), (policy1, assets0)]
+      let outValue0 = MaryValue 20 $ MultiAsset $ Map.fromList [(policy0, assets0), (policy1, assets0)]
 
       tx0 <-
         Babbage.mkMAssetsScriptTx
@@ -2315,7 +2315,7 @@ referenceMintingScript =
 
       let utxo0 = head $ Babbage.mkUTxOBabbage tx0
       -- use a reference to an output which has a minting script.
-      let val0 = MaryValue 1 $ Map.singleton (PolicyID alwaysSucceedsScriptHash) (Map.singleton (head assetNames) 1)
+      let val0 = MultiAsset $ Map.singleton (PolicyID alwaysSucceedsScriptHash) (Map.singleton (head assetNames) 1)
       tx1 <-
         Babbage.mkMAssetsScriptTx
           [UTxOIndex 0]
@@ -2352,7 +2352,7 @@ referenceDelegation =
 
       let utxo0 = head $ Babbage.mkUTxOBabbage tx0
       -- use a reference to an output which has a minting script.
-      let val0 = MaryValue 1 $ Map.singleton (PolicyID alwaysSucceedsScriptHash) (Map.singleton (head assetNames) 1)
+      let val0 = MultiAsset $ Map.singleton (PolicyID alwaysSucceedsScriptHash) (Map.singleton (head assetNames) 1)
       tx1 <-
         Babbage.mkMAssetsScriptTx
           [UTxOIndex 0]
