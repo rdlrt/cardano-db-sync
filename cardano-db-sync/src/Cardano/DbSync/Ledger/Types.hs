@@ -87,6 +87,7 @@ instance FromCBOR EpochBlockNo where
       1 -> pure EBBEpochBlockNo
       2 -> EpochBlockNo <$> fromCBOR
       n -> fail $ "unexpected EpochBlockNo value " <> show n
+
 encodeCardanoLedgerState :: (ExtLedgerState CardanoBlock -> Encoding) -> CardanoLedgerState -> Encoding
 encodeCardanoLedgerState encodeExt cls =
   mconcat
@@ -109,6 +110,14 @@ data LedgerStateFile = LedgerStateFile
   }
   deriving (Show)
 
+newtype DepositsMap = DepositsMap {unDepositsMap :: Map ByteString Coin}
+
+lookupDepositsMap :: ByteString -> DepositsMap  -> Maybe Coin
+lookupDepositsMap bs = Map.lookup bs . unDepositsMap
+
+emptyDepositsMap :: DepositsMap
+emptyDepositsMap = DepositsMap Map.empty
+
 -- The result of applying a new block. This includes all the data that insertions require.
 data ApplyResult = ApplyResult
   { apPrices :: !(Strict.Maybe Prices) -- prices after the block application
@@ -117,6 +126,7 @@ data ApplyResult = ApplyResult
   , apSlotDetails :: !SlotDetails
   , apStakeSlice :: !Generic.StakeSliceRes
   , apEvents :: ![LedgerEvent]
+  , apDepositsMap :: !DepositsMap
   }
 
 defaultApplyResult :: SlotDetails -> ApplyResult
@@ -128,6 +138,7 @@ defaultApplyResult slotDetails =
     , apSlotDetails = slotDetails
     , apStakeSlice = Generic.NoSlices
     , apEvents = []
+    , depositsMap = emptyDepositsMap
     }
 
 newtype LedgerDB = LedgerDB

@@ -209,7 +209,8 @@ applyBlock env blk = do
     !ledgerDB <- readStateUnsafe env
     let oldState = ledgerDbCurrent ledgerDB
     let !result = applyBlk (ExtLedgerCfg (getTopLevelconfigHasLedger env)) blk (clsState oldState)
-    let !ledgerEvents = mapMaybe convertAuxLedgerEvent (lrEvents result)
+    let !ledgerEventsFull = mapMaybe convertAuxLedgerEvent (lrEvents result)
+    let !(ledgerEvents, deposits) = splitDeposits ledgerEventsFull
     let !newLedgerState = lrResult result
     !details <- getSlotDetails env (ledgerState newLedgerState) time (cardanoBlockSlotNo blk)
     let !newEpoch = mkNewEpoch (clsState oldState) newLedgerState (findAdaPots ledgerEvents)
@@ -225,6 +226,7 @@ applyBlock env blk = do
             , apSlotDetails = details
             , apStakeSlice = stakeSlice newState details
             , apEvents = ledgerEvents
+            , depositsMap = DepositsMap deposits
             }
     pure (oldState, appResult)
   where

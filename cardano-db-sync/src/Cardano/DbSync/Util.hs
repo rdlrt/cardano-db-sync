@@ -27,6 +27,7 @@ module Cardano.DbSync.Util (
   textShow,
   thrd3,
   forth4,
+  splitLast,
   traverseMEither,
   whenStrictJust,
   whenMaybe,
@@ -214,6 +215,12 @@ thrd3 (_, _, c, _) = c
 
 forth4 :: (a, b, c, d) -> d
 forth4 (_, _, _, d) = d
+
+splitLast :: [(a, b, c, d)] -> [((a, b, c), d)]
+splitLast = go
+  where
+    go [] = []
+    go ((a, b, c, d) : rest) = ((a, b, c), d) : go rest
 
 mlookup :: Ord k => Maybe k -> Map k a -> Maybe a
 mlookup mKey mp = (`Map.lookup` mp) =<< mKey

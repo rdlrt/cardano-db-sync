@@ -129,7 +129,7 @@ insertShelleyBlock syncEnv shouldLog withinTwoMins withinHalfHour blk details is
           }
 
     let zippedTx = zip [0 ..] (Generic.blkTxs blk)
-    let txInserter = insertTx syncEnv isMember blkId (sdEpochNo details) (Generic.blkSlotNo blk)
+    let txInserter = insertTx syncEnv isMember blkId (sdEpochNo details) (Generic.blkSlotNo blk) (apDepositsMap applyResult)
     blockGroupedData <- foldM (\gp (idx, tx) -> txInserter idx tx gp) mempty zippedTx
     minIds <- insertBlockGroupedData syncEnv blockGroupedData
 
@@ -248,19 +248,34 @@ insertTx ::
   DB.BlockId ->
   EpochNo ->
   SlotNo ->
+  DepositsMap ->
   Word64 ->
   Generic.Tx ->
   BlockGroupedData ->
   ExceptT SyncNodeError (ReaderT SqlBackend m) BlockGroupedData
-insertTx syncEnv isMember blkId epochNo slotNo blockIndex tx blockGroupData = do
-  hasConsumed <- liftIO $ getHasConsumed syncEnv
+insertTx tracer cache iopts network isMember blkId epochNo slotNo depositsMap blockIndex tx grouped = do
+  let !txHash = Generic.txHash tx
+  let !mdeposits = if not (Generic.txValidContract tx) then Just 0 else lookupDepositsMap txHash depositsMap
   let !outSum = fromIntegral $ unCoin $ Generic.txOutSum tx
       !withdrawalSum = fromIntegral $ unCoin $ Generic.txWithdrawalSum tx
-  !resolvedInputs <- mapM (resolveTxInputs hasConsumed (fst <$> groupedTxOut blockGroupData)) (Generic.txInputs tx)
-  let !inSum = sum $ map (unDbLovelace . forth4) resolvedInputs
-  let diffSum = if inSum >= outSum then inSum - outSum else 0
-  let !fees = maybe diffSum (fromIntegral . unCoin) (Generic.txFees tx)
-  let !txHash = Generic.txHash tx
+  hasConsumed <- liftIO $ getHasConsumed syncEnv
+  (resolvedInputs, fees, deposits)  <- case (mdeposits, Generic.txFees tx) of
+    (Just deposits, Just txFees) -> do
+      (resolvedInputs, _) <- fmap fst . splitLast <$> mapM (resolveTxInputs hasConsumed False (fst <$> groupedTxOut grouped)) (Generic.txInputs tx)
+      pure (resolvedInputs, txFees, deposits)
+    (Nothing, Just fees) -> do
+      (resolvedInputs, amounts) <- splitLast <$> mapM (resolveTxInputs hasConsumed True (fst <$> groupedTxOut grouped)) (Generic.txInputs tx)
+      if any isNothing amounts
+        then pure (resolvedInputs, fees, Nothing)
+        else
+          let !inSum = sum $ map unDbLovelace $ catMaybes amounts
+          in (resolvedInsFull, fees, fromIntegral (inSum + withdrawalSum) - fromIntegral (outSum + fees))
+    _ -> do
+      (resolvedInsFull, _) <- splitLast <$> mapM (resolveTxInputs hasConsumed False (fst <$> groupedTxOut grouped)) (Generic.txInputs tx)
+      let !inSum = sum $ map (unDbLovelace . thrd3) resolvedInputs
+          !diffSum = if inSum >= outSum then inSum - outSum else 0
+          !fees = maybe diffSum (fromIntegral . unCoin) (Generic.txFees tx)
+      pure (resolvedInsFull, fees, 0)
   -- Insert transaction and get txId from the DB.
   !txId <-
     lift . DB.insertTx $
@@ -416,9 +431,9 @@ insertCollateralTxOut tracer cache iopts (txId, _txHash) (Generic.TxOut index ad
 prepareTxIn ::
   DB.TxId ->
   Map Word64 DB.RedeemerId ->
-  (Generic.TxIn, DB.TxId, Either Generic.TxIn DB.TxOutId, DbLovelace) ->
+  (Generic.TxIn, DB.TxId, Either Generic.TxIn DB.TxOutId) ->
   ExtendedTxIn
-prepareTxIn txInId redeemers (txIn, txOutId, mTxOutId, _lovelace) =
+prepareTxIn txInId redeemers (txIn, txOutId, mTxOutId) =
   ExtendedTxIn
     { etiTxIn = txInDB
     , etiTxOutId = mTxOutId

@@ -138,31 +138,39 @@ insertReverseIndex blockId minIds =
 
 -- | If we can't resolve from the db, we fall back to the provided outputs
 -- This happens the input consumes an output introduced in the same block.
--- In this case we also cannot find yet the 'TxOutId', so we return 'Nothing' for now
 resolveTxInputs ::
   MonadIO m =>
   Bool ->
+  Bool ->
   [ExtendedTxOut] ->
   Generic.TxIn ->
-  ExceptT SyncNodeError (ReaderT SqlBackend m) (Generic.TxIn, DB.TxId, Either Generic.TxIn DB.TxOutId, DbLovelace)
-resolveTxInputs hasConsumed groupedOutputs txIn =
+  ExceptT SyncNodeError (ReaderT SqlBackend m) (Generic.TxIn, DB.TxId, Either Generic.TxIn DB.TxOutId, Maybe DbLovelace)
+resolveTxInputs hasConsumed needsDeposit groupedOutputs txIn =
   liftLookupFail ("resolveTxInputs " <> textShow txIn <> " ") $ do
     qres <-
-      if not hasConsumed
-        then fmap convertnotFound <$> queryResolveInput txIn
-        else fmap convertFound <$> queryResolveInput2 txIn
+      case (hasConsumed, needsDeposit) of
+        (False, _) -> map convertnotFound <$> resolveInputTxId txIn
+        (True, False) -> fmap convertFoundTxOutId <$> resolveInputTxOutId txIn
+        (True, True) -> fmap convertFoundAll <$> resolveInputTxOutIdValue txIn
     case qres of
       Right ret -> pure $ Right ret
       Left err ->
         case resolveInMemory txIn groupedOutputs of
           Nothing -> pure $ Left err
-          Just eutxo -> pure $ Right $ convertnotFound (DB.txOutTxId (etoTxOut eutxo), DB.txOutValue (etoTxOut eutxo))
+          Just eutxo | not hasConsumed && needsDeposit ->
+            pure $ Right $ convertnotFound $ DB.txOutTxId (etoTxOut eutxo)
+          Just eutxo ->
+            pure $ Right $ convertFoundAll (DB.txOutTxId (etoTxOut eutxo), DB.txOutValue (etoTxOut eutxo))
   where
-    convertFound :: (DB.TxId, DB.TxOutId, DbLovelace) -> (Generic.TxIn, DB.TxId, Either Generic.TxIn DB.TxOutId, DbLovelace)
-    convertFound (txId, txOutId, lovelace) = (txIn, txId, Right txOutId, lovelace)
+    convertnotFound :: DB.TxId -> (Generic.TxIn, DB.TxId, Either Generic.TxIn DB.TxOutId, Maybe DbLovelace)
+    convertnotFound txId = (txIn, txId, Left txIn, Nothing)
 
-    convertnotFound :: (DB.TxId, DbLovelace) -> (Generic.TxIn, DB.TxId, Either Generic.TxIn DB.TxOutId, DbLovelace)
-    convertnotFound (txId, lovelace) = (txIn, txId, Left txIn, lovelace)
+    convertFoundTxOutId :: (DB.TxId, DB.TxOutId) -> (Generic.TxIn, DB.TxId, Either Generic.TxIn DB.TxOutId)
+    convertFoundTxOutId (txId, txOutId) = (txIn, txId, Right txOutId, Nothing)
+
+    convertFoundAll :: (DB.TxId, DB.TxOutId, DbLovelace) -> (Generic.TxIn, DB.TxId, Either Generic.TxIn DB.TxOutId, Maybe DbLovelace)
+    convertFoundAll (txId, txOutId, lovelace) = (txIn, txId, Right txOutId, lovelace)
+
 
 resolveRemainingInputs ::
   MonadIO m =>
