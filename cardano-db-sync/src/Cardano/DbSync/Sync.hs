@@ -56,12 +56,13 @@ import Network.TypedProtocol.Pipelined (N (..), Nat (Succ, Zero))
 import Ouroboros.Consensus.Block.Abstract (CodecConfig)
 import Ouroboros.Consensus.Byron.Node ()
 import Ouroboros.Consensus.Cardano.Node ()
+import Ouroboros.Consensus.Node.NetworkProtocolVersion
 
 import Ouroboros.Consensus.Config (configCodec)
 import Ouroboros.Consensus.Network.NodeToClient (
-  ClientCodecs,
   Codecs' (..),
   cChainSyncCodec,
+  clientCodecs,
   cStateQueryCodec,
   cTxSubmissionCodec,
  )
@@ -132,11 +133,11 @@ runSyncNodeClient metricsSetters syncEnv iomgr trce tc (SocketPath socketPath) =
   void $
     subscribe
       (localSnocket iomgr)
-      codecConfig
       (envNetworkMagic syncEnv)
+      (supportedNodeToClientVersions (Proxy @CardanoBlock))
       networkSubscriptionTracers
       clientSubscriptionParams
-      (dbSyncProtocols syncEnv metricsSetters tc)
+      (dbSyncProtocols syncEnv metricsSetters tc codecConfig)
   where
     codecConfig :: CodecConfig CardanoBlock
     codecConfig = configCodec $ getTopLevelConfig syncEnv
@@ -178,11 +179,12 @@ dbSyncProtocols ::
   SyncEnv ->
   MetricSetters ->
   ThreadChannels ->
+  CodecConfig CardanoBlock ->
   Network.NodeToClientVersion ->
-  ClientCodecs CardanoBlock IO ->
+  BlockNodeToClientVersion CardanoBlock ->
   ConnectionId LocalAddress ->
   NodeToClientProtocols 'InitiatorMode BSL.ByteString IO () Void
-dbSyncProtocols syncEnv metricsSetters tc _version codecs _connectionId =
+dbSyncProtocols syncEnv metricsSetters tc codecConfig version bversion _connectionId =
   NodeToClientProtocols
     { localChainSyncProtocol = localChainSyncPtcl
     , localTxSubmissionProtocol = dummylocalTxSubmit
@@ -191,6 +193,8 @@ dbSyncProtocols syncEnv metricsSetters tc _version codecs _connectionId =
         InitiatorProtocolOnly $ MuxPeer Logging.nullTracer (cTxMonitorCodec codecs) localTxMonitorPeerNull
     }
   where
+    codecs = clientCodecs codecConfig bversion version
+
     localChainSyncTracer :: Tracer IO (TraceSendRecv (ChainSync CardanoBlock (Point CardanoBlock) (Tip CardanoBlock)))
     localChainSyncTracer = toLogObject $ appendName "ChainSync" tracer
 
