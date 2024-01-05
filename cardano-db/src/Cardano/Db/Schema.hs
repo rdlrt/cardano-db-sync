@@ -290,7 +290,7 @@ share
 
   TxMetadata
     key                 DbWord64            sqltype=word64type
-    json                Text Maybe          sqltype=jsonb
+    json                Text Maybe
     bytes               ByteString          sqltype=bytea
     txId                TxId                noreference
 
@@ -392,7 +392,7 @@ share
     txId                TxId                noreference
     hash                ByteString          sqltype=hash28type
     type                ScriptType          sqltype=scripttype
-    json                Text Maybe          sqltype=jsonb
+    json                Text Maybe
     bytes               ByteString Maybe    sqltype=bytea
     serialisedSize      Word64 Maybe        sqltype=word31type
     UniqueScript        hash
@@ -400,14 +400,14 @@ share
   Datum
     hash                ByteString          sqltype=hash32type
     txId                TxId                noreference
-    value               Text Maybe          sqltype=jsonb
+    value               Text Maybe
     bytes               ByteString          sqltype=bytea
     UniqueDatum         hash
 
   RedeemerData
     hash                ByteString          sqltype=hash32type
     txId                TxId                noreference
-    value               Text Maybe          sqltype=jsonb
+    value               Text Maybe
     bytes               ByteString          sqltype=bytea
     UniqueRedeemerData  hash
 
@@ -534,7 +534,7 @@ share
 
   CostModel
     hash                ByteString          sqltype=hash32type
-    costs               Text                sqltype=jsonb
+    costs               Text
     UniqueCostModel     hash
 
   ExtraMigrations
@@ -637,7 +637,7 @@ share
     poolId              PoolHashId          noreference
     tickerName          Text
     hash                ByteString          sqltype=hash32type
-    json                Text                sqltype=jsonb
+    json                Text
     bytes               ByteString          sqltype=bytea
     pmrId               PoolMetadataRefId   noreference
     UniqueOffChainPoolData  poolId hash
@@ -658,7 +658,7 @@ share
   OffChainVoteData
     votingAnchorId      VotingAnchorId      noreference
     hash                ByteString
-    json                Text                sqltype=jsonb
+    json                Text
     bytes               ByteString          sqltype=bytea
     warning             Text Maybe
     UniqueOffChainVoteData votingAnchorId hash
