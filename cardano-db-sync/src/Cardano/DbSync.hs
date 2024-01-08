@@ -181,8 +181,8 @@ runSyncNode metricsSetters trce iomgr dbConnString ranMigrations runMigrationFnc
                 runMigrationFnc
           liftIO $ runReaderT (addRewardConstraintsIfNotExist syncEnv trce) (envBackend syncEnv)
 
-          -- if user wants to reset fiels in db that have the type jsonb
-          when (enpSetJsonB syncNodeParams) $ liftIO $ runResetJsonB syncEnv
+          -- if user wants to reset columns in db that used to have the type jsonb
+          when (enpResetJsonb syncNodeParams) $ liftIO $ runResetJsonb syncEnv
 
           liftIO $ runExtraMigrationsMaybe syncEnv
           unless (enpShouldUseLedger syncNodeParams) $ liftIO $ do

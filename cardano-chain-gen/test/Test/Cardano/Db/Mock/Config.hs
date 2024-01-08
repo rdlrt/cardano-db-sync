@@ -116,7 +116,7 @@ data CommandLineArgs = CommandLineArgs
   , claPruneTxOut :: Bool
   , claBootstrap :: Bool
   , claForceTxIn :: Bool
-  , claResetJsonB :: Bool
+  , claResetJsonb :: Bool
   }
 
 data WithConfigArgs = WithConfigArgs
@@ -283,7 +283,7 @@ mkSyncNodeParams staticDir mutableDir CommandLineArgs {..} = do
       , enpSnEveryFollowing = 35
       , enpSnEveryLagging = 35
       , enpMaybeRollback = Nothing
-      , enpSetJsonB = claResetJsonB
+      , enpResetJsonb = claResetJsonb
       }
 
 initCommandLineArgs :: CommandLineArgs
@@ -306,7 +306,7 @@ initCommandLineArgs =
     , claPruneTxOut = False
     , claBootstrap = False
     , claForceTxIn = False
-    , claResetJsonB = False
+    , claResetJsonb = False
     }
 
 emptyMetricsSetters :: MetricSetters
